@@ -31,8 +31,6 @@ class SubscriptionEntity {
     @Column(nullable = false)
     var status: SubscriptionStatus = SubscriptionStatus.ACTIVE
 
-    @Column(name = "auto_renew")
-    var autoRenew: Boolean = false
 
     @Column(name = "canceled_at")
     var canceledAt: LocalDateTime? = null

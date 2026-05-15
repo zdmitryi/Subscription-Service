@@ -1,4 +1,4 @@
-package com.example.subscription.repositories
+package com.example.subscription.repository
 
 import com.example.subscription.models.UserEntity
 import org.springframework.data.jpa.repository.JpaRepository

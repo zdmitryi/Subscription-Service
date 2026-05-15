@@ -1,7 +1,7 @@
 package com.example.subscription.controller
 
 import com.example.subscription.models.User
-import com.example.subscription.services.UserService
+import com.example.subscription.utility.UserService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus

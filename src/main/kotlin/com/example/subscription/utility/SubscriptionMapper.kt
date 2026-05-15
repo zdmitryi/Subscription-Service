@@ -16,7 +16,6 @@ class SubscriptionMapper {
             endDate = entity.endDate,
             price = entity.price,
             status = entity.status,
-            autoRenew = entity.autoRenew
         )
     }
 
@@ -30,7 +29,6 @@ class SubscriptionMapper {
         ).apply {
             id = domain.id
             status = domain.status
-            autoRenew = domain.autoRenew
         }
     }
 
@@ -41,7 +39,6 @@ class SubscriptionMapper {
         domain.endDate.let { entity.endDate = it }
         domain.price.let { entity.price = it }
         domain.status.let { entity.status = it }
-        domain.autoRenew.let { entity.autoRenew = it }
         entity.updatedAt = java.time.LocalDateTime.now()
     }
 

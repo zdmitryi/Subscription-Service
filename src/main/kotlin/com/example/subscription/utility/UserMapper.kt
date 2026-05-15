@@ -1,4 +1,4 @@
-package com.example.subscription.mappers
+package com.example.subscription.utility
 
 import com.example.subscription.models.UserEntity
 import com.example.subscription.models.User

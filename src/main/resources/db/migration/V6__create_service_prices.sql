@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS service_prices (
-    id BIGSERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     service_name VARCHAR(255) NOT NULL UNIQUE,
     monthly_price DECIMAL(10,2) NOT NULL
 );

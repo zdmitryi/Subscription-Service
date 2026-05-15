@@ -5,8 +5,8 @@ import com.example.subscription.models.Subscription
 import com.example.subscription.models.SubscriptionHistoryEntity
 import com.example.subscription.models.SubscriptionStatus
 import com.example.subscription.models.User
-import com.example.subscription.repositories.SubscriptionRepository
-import com.example.subscription.repositories.UserRepository
+import com.example.subscription.repository.SubscriptionRepository
+import com.example.subscription.repository.UserRepository
 import com.example.subscription.repository.ServicePriceRepository
 import com.example.subscription.repository.SubscriptionHistoryRepository
 import com.opencsv.CSVWriter
@@ -320,7 +320,7 @@ class SubscriptionService(
     fun getSubscriptionHistory(subscriptionId: Long, currentUser: User): List<SubscriptionHistoryEntity> {
         val subscription = getSubscriptionById(subscriptionId)
 
-        if (subscription.userId != currentUser.id && !currentUser.isAdmin) {
+        if (subscription.userId != currentUser.id) {
             throw AccessDeniedException("No access to history of this subscription")
         }
 

@@ -1,9 +1,7 @@
-package com.example.subscription.services
+package com.example.subscription.utility
 
-import com.example.subscription.models.UserEntity
-import com.example.subscription.mappers.UserMapper
 import com.example.subscription.models.User
-import com.example.subscription.repositories.UserRepository
+import com.example.subscription.repository.UserRepository
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
@@ -55,7 +53,7 @@ class UserService(
 
     override fun loadUserByUsername(username: String): UserDetails {
         val entity = userRepository.findByUsername(username)
-            .orElseThrow { UsernameNotFoundException("User not found with username: $username") }
+            .orElseThrow { NoSuchElementException("User not found with username: $username") }
 
         return org.springframework.security.core.userdetails.User
             .withUsername(entity.username)

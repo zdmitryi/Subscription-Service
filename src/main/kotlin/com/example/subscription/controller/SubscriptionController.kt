@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @RestController
 @RequestMapping("/subscription")
@@ -188,10 +189,23 @@ class SubscriptionController(
         )
 
         val csvData = subscriptionService.exportToCsv(filter)
-
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"))
+        val fileName = buildString {
+            append("subscriptions")
+            if (userId != null) {
+                append("_user_$userId")
+            }
+            if (status != null) {
+                append("_${status.name.lowercase()}")
+            }
+            if (serviceName != null && serviceName.isNotBlank()) {
+                append("_${serviceName.lowercase()}")
+            }
+            append("_$timestamp.csv")
+        }
         return ResponseEntity.ok()
             .header("Content-Type", "text/csv")
-            .header("Content-Disposition", "attachment; filename=\"CSV-file\"")
+            .header("Content-Disposition", "attachment; filename=\"$fileName\"")
             .body(csvData)
     }
 }

@@ -18,5 +18,4 @@ data class User(
     val password: String,
 
     val isActive: Boolean = true,
-    val isAdmin: Boolean = false
 )

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Future
 import jakarta.validation.constraints.FutureOrPresent
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
+import jakarta.validation.constraints.PositiveOrZero
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -27,6 +28,7 @@ data class Subscription(
     val endDate: LocalDate,
 
     @field:NotNull(message = "Price is required")
+    @PositiveOrZero
     val price: BigDecimal,
 
     val status: SubscriptionStatus,
