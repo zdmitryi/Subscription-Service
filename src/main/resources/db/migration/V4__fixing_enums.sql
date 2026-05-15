@@ -1,0 +1,3 @@
+ALTER TABLE subscriptions
+ALTER COLUMN status TYPE VARCHAR(50);
+DROP TYPE IF EXISTS subscription_status CASCADE;

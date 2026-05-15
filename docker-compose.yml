@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine  # Лучше использовать 15, а не 18
+    container_name: subscription_postgres  # Уникальное имя контейнера
+    environment:
+      POSTGRES_DB: subscription_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"  # Порт может конфликтовать!
+    volumes:
+      - subscription_postgres_data:/var/lib/postgresql/data  # Уникальное имя volume
+    restart: unless-stopped
+
+volumes:
+  subscription_postgres_data:
