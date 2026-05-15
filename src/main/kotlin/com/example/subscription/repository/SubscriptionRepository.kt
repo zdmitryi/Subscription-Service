@@ -10,8 +10,6 @@ import java.time.LocalDate
 
 interface SubscriptionRepository : JpaRepository<SubscriptionEntity, Long> {
 
-    fun findByUserId(userId: Long): List<SubscriptionEntity>
-
     fun findByUserIdAndStatus(userId: Long, status: SubscriptionStatus): List<SubscriptionEntity>
 
     fun findByStatus(status: SubscriptionStatus): List<SubscriptionEntity>

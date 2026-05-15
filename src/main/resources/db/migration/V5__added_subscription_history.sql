@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS subscription_history (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     subscription_id BIGINT NOT NULL,
     old_status VARCHAR(50),
     new_status VARCHAR(50) NOT NULL,

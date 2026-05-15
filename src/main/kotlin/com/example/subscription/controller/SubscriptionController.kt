@@ -168,7 +168,6 @@ class SubscriptionController(
 
 
     @GetMapping("/export/csv")
-    @Operation(summary = "Экспорт подписок в CSV")
     fun exportSubscriptionsToCsv(
         @RequestParam(name = "userId", required = false) userId: Long?,
         @RequestParam(name = "serviceName", required = false) serviceName: String?,

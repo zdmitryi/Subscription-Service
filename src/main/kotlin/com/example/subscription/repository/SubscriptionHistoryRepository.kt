@@ -9,5 +9,4 @@ interface SubscriptionHistoryRepository : JpaRepository<SubscriptionHistoryEntit
 
     fun findBySubscriptionIdOrderByChangedAtDesc(subscriptionId: Long): List<SubscriptionHistoryEntity>
 
-    fun findBySubscriptionId(subscriptionId: Long): List<SubscriptionHistoryEntity>
 }
