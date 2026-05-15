@@ -1,15 +1,17 @@
-package com.example.subscription.controllers
+package com.example.subscription.controller
 
 import com.example.subscription.models.Subscription
 import com.example.subscription.models.SubscriptionStatus
 import com.example.subscription.models.User
 import com.example.subscription.utility.SubscriptionService
+import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/subscription")
@@ -112,6 +114,17 @@ class SubscriptionController(
         return ResponseEntity.ok(activated)
     }
 
+    @PostMapping("/{id}/renew")
+    fun renewSubscription(
+        @PathVariable("id") id: Long,
+        user: User
+    ): ResponseEntity<Subscription> {
+        log.info("Called renewSubscription with id: $id")
+        val renewed = subscriptionService.renewSubscription(id, user)
+        return ResponseEntity.ok(renewed)
+    }
+
+
     @DeleteMapping("/{id}")
     fun deleteSubscription(
         @PathVariable("id") id: Long,
@@ -120,5 +133,65 @@ class SubscriptionController(
         log.info("Called deleteSubscription with id: $id")
         subscriptionService.deleteSubscriptionById(id, user)
         return ResponseEntity.noContent().build()
+    }
+
+    @GetMapping("/{id}/history")
+    fun getSubscriptionHistory(
+        @PathVariable("id") id: Long,
+        user: User
+    ): ResponseEntity<List<SubscriptionHistoryResponse>?> {
+        val history = subscriptionService.getSubscriptionHistory(id, user)
+        val response = history.map { entity ->
+            SubscriptionHistoryResponse(
+                id = entity.id!!,
+                subscriptionId = entity.subscriptionId,
+                oldStatus = entity.oldStatus,
+                newStatus = entity.newStatus,
+                changedBy = entity.changedBy,
+                changeReason = entity.changeReason,
+                changedAt = entity.changedAt
+            )
+        }
+
+        return ResponseEntity.ok(response)
+    }
+    data class SubscriptionHistoryResponse(
+        val id: Long,
+        val subscriptionId: Long,
+        val oldStatus: SubscriptionStatus?,
+        val newStatus: SubscriptionStatus,
+        val changedBy: String,
+        val changeReason: String?,
+        val changedAt: LocalDateTime
+    )
+
+
+    @GetMapping("/export/csv")
+    @Operation(summary = "Экспорт подписок в CSV")
+    fun exportSubscriptionsToCsv(
+        @RequestParam(name = "userId", required = false) userId: Long?,
+        @RequestParam(name = "serviceName", required = false) serviceName: String?,
+        @RequestParam(name = "status", required = false) status: SubscriptionStatus?,
+        @RequestParam(name = "startDateFrom", required = false) startDateFrom: LocalDate?,
+        @RequestParam(name = "startDateTo", required = false) startDateTo: LocalDate?
+    ): ResponseEntity<ByteArray> {
+        log.info("Exporting subscriptions to CSV")
+
+        val filter = SubscriptionService.SubscriptionFilter(
+            userId = userId,
+            serviceName = serviceName,
+            status = status,
+            startDateFrom = startDateFrom,
+            startDateTo = startDateTo,
+            pageSize = null,
+            pageNumber = null
+        )
+
+        val csvData = subscriptionService.exportToCsv(filter)
+
+        return ResponseEntity.ok()
+            .header("Content-Type", "text/csv")
+            .header("Content-Disposition", "attachment; filename=\"CSV-file\"")
+            .body(csvData)
     }
 }

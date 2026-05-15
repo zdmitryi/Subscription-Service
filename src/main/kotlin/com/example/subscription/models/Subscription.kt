@@ -33,10 +33,6 @@ data class Subscription(
 
     val autoRenew: Boolean = false
 ) {
-    @AssertTrue(message = "End date must be after start date")
-    fun isValidDateRange(): Boolean {
-        return endDate.isAfter(startDate)
-    }
 }
 
 enum class SubscriptionStatus {

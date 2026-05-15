@@ -10,7 +10,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate  # Используем validate, т.к. Flyway управляет схемой
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -28,12 +28,23 @@ spring:
   task:
     scheduling:
       pool:
-        size: 5  # Размер пула потоков для scheduler
+        size: 5
       thread-name-prefix: subscription-scheduler-
 
-# Настройки для Swagger
 springdoc:
   api-docs:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
