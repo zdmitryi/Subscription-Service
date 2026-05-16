@@ -104,10 +104,7 @@ class SubscriptionService(
         @Valid subscriptionToCreate: Subscription,
         currentUser: User
     ): Subscription {
-        if (!isValidSubscription(subscriptionToCreate)) {
-            throw IllegalArgumentException("End date must be after start date")
-        }
-
+        // Проверяем существование пользователя
         if (!userRepository.existsById(subscriptionToCreate.userId)) {
             throw EntityNotFoundException("User not found with id: ${subscriptionToCreate.userId}")
         }
@@ -120,6 +117,21 @@ class SubscriptionService(
             throw IllegalArgumentException("Status should be empty, will be set to ACTIVE")
         }
 
+        val priceEntity = servicePriceRepository.findByServiceName(subscriptionToCreate.serviceName)
+            ?: throw IllegalArgumentException("Service '${subscriptionToCreate.serviceName}' not found in catalog")
+
+        val months = calculateMonths(subscriptionToCreate.price, priceEntity.monthlyPrice)
+
+        val calculatedEndDate = subscriptionToCreate.startDate.plusMonths(months.toLong())
+
+        if (subscriptionToCreate.endDate != calculatedEndDate) {
+            throw IllegalArgumentException(
+                "Invalid end date. For price ${subscriptionToCreate.price} " +
+                        "(${priceEntity.monthlyPrice}/month) the end date should be $calculatedEndDate, " +
+                        "but got ${subscriptionToCreate.endDate}"
+            )
+        }
+
         val subscriptionToSave = subscriptionToCreate.copy(
             status = SubscriptionStatus.ACTIVE
         )
@@ -128,10 +140,14 @@ class SubscriptionService(
         val saved = subscriptionRepository.save(entity)
 
         meterRegistry.counter("subscriptions.created",
-            "service", subscriptionToCreate.serviceName
+            "service", subscriptionToCreate.serviceName,
+            "months", months.toString()
         ).increment()
 
-        log.info("New subscription created")
+        saveHistory(saved.id!!, null, SubscriptionStatus.ACTIVE, currentUser.username,
+            "Created for $months months. Paid: ${subscriptionToCreate.price}")
+
+        log.info("New subscription created for $months months")
         return subscriptionMapper.toDomain(saved)
     }
 
@@ -145,16 +161,25 @@ class SubscriptionService(
 
         val existingSubscription = subscriptionMapper.toDomain(existingEntity)
 
-        if (!isValidSubscription(subscriptionToUpdate)) {
-            throw IllegalArgumentException("End date must be after start date")
-        }
-
         if (subscriptionToUpdate.status != existingSubscription.status) {
             throw IllegalArgumentException("Use specific endpoints to change status")
         }
 
         if (subscriptionToUpdate.id != null) {
             throw IllegalArgumentException("ID should be empty")
+        }
+
+        val priceEntity = servicePriceRepository.findByServiceName(subscriptionToUpdate.serviceName)
+            ?: throw IllegalArgumentException("Service '${subscriptionToUpdate.serviceName}' not found in catalog")
+
+        val months = calculateMonths(subscriptionToUpdate.price, priceEntity.monthlyPrice)
+        val calculatedEndDate = subscriptionToUpdate.startDate.plusMonths(months.toLong())
+
+        if (subscriptionToUpdate.endDate != calculatedEndDate) {
+            throw IllegalArgumentException(
+                "Invalid end date. For price ${subscriptionToUpdate.price} " +
+                        "(${priceEntity.monthlyPrice}/month) the end date should be $calculatedEndDate"
+            )
         }
 
         subscriptionMapper.updateEntity(existingEntity, subscriptionToUpdate)
@@ -234,10 +259,6 @@ class SubscriptionService(
 
         subscriptionRepository.deleteById(id)
         log.info("Subscription deleted: $id")
-    }
-
-    private fun isValidSubscription(subscription: Subscription): Boolean {
-        return subscription.endDate.isAfter(subscription.startDate)
     }
 
     @Transactional
@@ -328,32 +349,36 @@ class SubscriptionService(
     }
 
     @Transactional
-    fun renewSubscription(id: Long, currentUser: User): Subscription {
+    fun renewSubscription(id: Long, currentUser: User, paidPrice: BigDecimal): Subscription {
         val entity = subscriptionRepository.findById(id)
             .orElseThrow { NoSuchElementException("Не существует элемента с таким id") }
 
         if (entity.status != SubscriptionStatus.EXPIRED) {
             throw IllegalStateException("Only expired subscriptions can be renewed")
         }
-
         val priceEntity = servicePriceRepository.findByServiceName(entity.serviceName)
             ?: throw IllegalArgumentException("Price not found for service: ${entity.serviceName}")
+        val months = calculateMonths(paidPrice, priceEntity.monthlyPrice)
+        val newEndDate = LocalDate.now().plusMonths(months.toLong())
 
-        log.info("Charging user ${currentUser.id}: ${priceEntity.monthlyPrice} for ${entity.serviceName}")
+        log.info("Renewing subscription $id for $months months. Paid: $paidPrice (${priceEntity.monthlyPrice}/month)")
 
-        entity.endDate = LocalDate.now().plusMonths(1)
-        entity.price = priceEntity.monthlyPrice
+        entity.endDate = newEndDate
+        entity.price = paidPrice
         entity.status = SubscriptionStatus.ACTIVE
+        entity.updatedAt = LocalDateTime.now()
 
         val updated = subscriptionRepository.save(entity)
 
         meterRegistry.counter("subscriptions.renewed",
-            "service", entity.serviceName
+            "service", entity.serviceName,
+            "months", months.toString()
         ).increment()
 
         saveHistory(entity.id!!, SubscriptionStatus.EXPIRED, SubscriptionStatus.ACTIVE,
-            currentUser.username, "Renewed. Charged: ${priceEntity.monthlyPrice}")
+            currentUser.username, "Renewed for $months months. Paid: $paidPrice")
 
+        log.info("Subscription renewed: $id, new end date: $newEndDate")
         return subscriptionMapper.toDomain(updated)
     }
 
@@ -371,7 +396,6 @@ class SubscriptionService(
             "End Date",
             "Price",
             "Status",
-            "Auto Renew",
         ))
 
         subscriptions.forEach { sub ->
@@ -383,12 +407,28 @@ class SubscriptionService(
                 sub.endDate.toString(),
                 sub.price.toString(),
                 sub.status.name,
-                sub.autoRenew.toString(),
             ))
         }
 
         csvWriter.close()
         return writer.toString().toByteArray(Charsets.UTF_8)
+    }
+
+    private fun calculateMonths(paidPrice: BigDecimal, monthlyPrice: BigDecimal): Int {
+        val months = paidPrice.divide(monthlyPrice, 10, java.math.RoundingMode.HALF_UP)
+        if (months.stripTrailingZeros().scale() > 0) {
+            throw IllegalArgumentException(
+                "Paid price $paidPrice is not a multiple of monthly price $monthlyPrice. " +
+                        "It should be ${monthlyPrice} * N where N is integer"
+            )
+        }
+
+        val monthsInt = months.toInt()
+        if (monthsInt <= 0) {
+            throw IllegalArgumentException("Paid price must be at least monthly price $monthlyPrice")
+        }
+
+        return monthsInt
     }
 
     private fun saveHistory(

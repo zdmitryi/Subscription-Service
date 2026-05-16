@@ -33,7 +33,6 @@ data class Subscription(
 
     val status: SubscriptionStatus,
 
-    val autoRenew: Boolean = false
 ) {
 }
 

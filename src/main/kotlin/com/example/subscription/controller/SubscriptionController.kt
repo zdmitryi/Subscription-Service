@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -118,10 +119,11 @@ class SubscriptionController(
     @PostMapping("/{id}/renew")
     fun renewSubscription(
         @PathVariable("id") id: Long,
+        @RequestParam("paidPrice") paidPrice: BigDecimal,
         user: User
     ): ResponseEntity<Subscription> {
         log.info("Called renewSubscription with id: $id")
-        val renewed = subscriptionService.renewSubscription(id, user)
+        val renewed = subscriptionService.renewSubscription(id, user, paidPrice)
         return ResponseEntity.ok(renewed)
     }
 

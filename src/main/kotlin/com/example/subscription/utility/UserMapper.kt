@@ -16,7 +16,6 @@ class UserMapper(
             username = entity.username,
             email = entity.email,
             password = entity.passwordHash,
-            isActive = entity.isActive
         )
     }
 
@@ -27,7 +26,6 @@ class UserMapper(
             passwordHash = passwordEncoder.encode(domain.password)
         ).apply {
             id = domain.id
-            isActive = domain.isActive
         }
     }
 
@@ -37,7 +35,6 @@ class UserMapper(
         if (domain.password.isNotBlank()) {
             entity.passwordHash = passwordEncoder.encode(domain.password)
         }
-        domain.isActive.let { entity.isActive = it }
         entity.updatedAt = java.time.LocalDateTime.now()
     }
 }
